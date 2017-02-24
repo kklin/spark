@@ -22,7 +22,8 @@ Quilt-managed Machines use public key authentication to control SSH access.
 To read the result of the Spark job, we will need to access the Master VM.
 
 If you would like to use `githubKey` authentication, open
-`sparkPI.js` and set the `sshKeys` Machine property appropriately:
+`$QUILT_PATH/github.com/quilt/spark/sparkPI.js` and set the `sshKeys` Machine
+property appropriately:
 
 ```javascript
 var baseMachine = new Machine({
@@ -97,6 +98,8 @@ Pi is roughly 3.14344
 17/02/18 05:50:17 INFO HttpServer: Starting HTTP Server
 ...
 ```
+
+Notice the line that says `Pi is roughly 3.14344`.
 
 **Note:** The Spark cluster is now up and usable. You can run the interactive
 spark-shell by exec-ing it in the Master Spark container:
