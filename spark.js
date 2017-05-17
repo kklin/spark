@@ -1,3 +1,4 @@
+const {Container, Service, publicInternet, LabelRule} = require("@quilt/quilt");
 var image = "quilt/spark";
 
 function setImage(newImage) {

@@ -1,5 +1,5 @@
-// Import spark.js
-var spark = require("github.com/quilt/spark");
+const {createDeployment, Machine, publicInternet, githubKeys, enough} = require("@quilt/quilt");
+var spark = require("./spark.js");
 
 var deployment = createDeployment({});
 
