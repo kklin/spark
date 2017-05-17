@@ -1,3 +1,9 @@
 {
-    "main": "./spark.js"
+  "name": "@quilt/spark",
+  "version": "0.0.1",
+  "main": "./spark.js",
+  "license": "MIT",
+  "dependencies": {
+    "@quilt/quilt": "quilt/quilt"
+  }
 }
