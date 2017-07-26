@@ -11,6 +11,10 @@ function setImage(newImage) {
   image = newImage;
 }
 
+function getHostname(c) {
+  return c.getHostname();
+}
+
 /**
  * Spark represents a Spark cluster (a set of connected Spark masters and
  * workers).
@@ -22,18 +26,23 @@ function setImage(newImage) {
  */
 function Spark(nMaster, nWorker, zookeeper) {
   const dkms = new Container(image, ['run', 'master']).replicate(nMaster);
+  dkms.forEach((dkm) => {
+    dkm.setHostname('spark-ms');
+  });
 
   if (zookeeper) {
-    const zooHosts = zookeeper.children().join(',');
+    const zooHosts = zookeeper.containers.map(getHostname);
+    const zooHostsStr = zooHosts.join(',');
     dkms.forEach((master) => {
-      master.setEnv('ZOO', zooHosts);
+      master.setEnv('ZOO', zooHostsStr);
     });
   }
 
   this.masters = new Service('spark-ms', dkms);
 
+  const masterHosts = this.masters.containers.map(getHostname);
   const dkws = new Container(image, ['run', 'worker'])
-    .withEnv({ MASTERS: this.masters.children().join(',') })
+    .withEnv({ MASTERS: masterHosts.join(',') })
     .replicate(nWorker);
   this.workers = new Service('spark-wk', dkws);
 
