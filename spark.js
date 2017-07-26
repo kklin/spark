@@ -37,10 +37,10 @@ function Spark(nMaster, nWorker, zookeeper) {
     .replicate(nWorker);
   this.workers = new Service('spark-wk', dkws);
 
-  this.workers.connect(7077, this.workers);
-  this.workers.connect(7077, this.masters);
+  this.workers.allowFrom(this.workers, 7077);
+  this.masters.allowFrom(this.workers, 7077);
   if (zookeeper) {
-    this.masters.connect(2181, zookeeper);
+    zookeeper.allowFrom(this.masters, 2181);
   }
 
   this.job = function job(command) {
@@ -51,8 +51,8 @@ function Spark(nMaster, nWorker, zookeeper) {
   };
 
   this.exposeUIToPublic = function exposeUIToPublic() {
-    publicInternet.connect(8080, this.masters);
-    publicInternet.connect(8081, this.workers);
+    this.masters.allowFrom(publicInternet, 8080);
+    this.workers.allowFrom(publicInternet, 8081);
     return this;
   };
 
