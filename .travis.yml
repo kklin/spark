@@ -4,9 +4,12 @@ node_js:
 
 install:
     - npm install .
+    - curl -sL -o ./quilt https://github.com/quilt/quilt/releases/download/dev/quilt_linux
+        && chmod +x ./quilt
 
 before_script:
     - npm install -g gulp-cli
 
 script:
     - gulp lint
+    - ./quilt inspect ./sparkPI.js graphviz
