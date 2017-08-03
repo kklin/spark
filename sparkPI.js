@@ -1,9 +1,7 @@
 const {
   Machine,
   createDeployment,
-  enough,
   githubKeys,
-  publicInternet,
 } = require('@quilt/quilt');
 const spark = require('./spark.js');
 
@@ -33,6 +31,3 @@ const baseMachine = new Machine({
 deployment.deploy(baseMachine.asMaster());
 deployment.deploy(baseMachine.asWorker().replicate(nWorker + 1));
 deployment.deploy(sprk);
-
-deployment.assert(publicInternet.canReach(sprk.masters), true);
-deployment.assert(enough, true);
