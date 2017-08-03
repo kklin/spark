@@ -36,7 +36,7 @@ function Spark(nMaster, nWorker, zookeeper) {
         return this;
     }
 
-    this.public = function() {
+    this.exposeUIToPublic = function() {
         publicInternet.connect(8080, this.masters);
         publicInternet.connect(8081, this.workers);
         return this;

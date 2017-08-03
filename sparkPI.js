@@ -7,13 +7,13 @@ var deployment = createDeployment({});
 var nWorker = 3;
 
 // Application
-// sprk.exclusive enforces that no two Spark containers should be on the
-// same node. sprk.public says that the containers should be allowed to talk
-// on the public internet. sprk.job causes Spark to run that job when it
-// boots.
+// sprk.exclusive enforces that no two Spark containers should be on the same
+// node. sprk.exposeUIToPublic says that the the public internet should be able
+// to connect to the Spark web interface. sprk.job causes Spark to run that
+// job when it boots.
 var sprk = new spark.Spark(1, nWorker)
     .exclusive()
-    .public()
+    .exposeUIToPublic()
     .job("run-example SparkPi");
 
 // Infrastructure
