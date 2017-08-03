@@ -1,4 +1,4 @@
-const { Container, Service, publicInternet, LabelRule } = require('@quilt/quilt');
+const { Container, Service, publicInternet } = require('@quilt/quilt');
 
 let image = 'quilt/spark';
 
@@ -53,11 +53,6 @@ function Spark(nMaster, nWorker, zookeeper) {
   this.exposeUIToPublic = function exposeUIToPublic() {
     this.masters.allowFrom(publicInternet, 8080);
     this.workers.allowFrom(publicInternet, 8081);
-    return this;
-  };
-
-  this.exclusive = function exclusive() {
-    this.masters.place(new LabelRule(true, this.workers));
     return this;
   };
 
