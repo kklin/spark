@@ -13,3 +13,7 @@ before_script:
 script:
     - gulp lint
     - ./quilt inspect ./sparkPI.js graphviz
+
+notifications:
+    slack:
+        secure: tnip780jOrcGT5zeovYVAdVuSRx83bwOMT+wQvEr1pA+5cYMZY3CJk0QgVmNeVY/EYGT+ZH4bM3y2s3i45ZqRgMzg8xC2Ht0XOUWmCNhvnsWQ/KsBKIAr+Yx2C1vZ1tLz8N0L0oYqDoftCJ1wyBfr87Kk4jULGacRyzl6UjLIa+/3BaJPtiotmLs433l6umxYw0YFIqnL6Wg1gOWT4d/hdcvXqjRM9NOV+h2MW/Sr2Uip11vRcVBgzuPQeq6OejYCbb0YGelbCk91ORHQD23mTdl/dpuB8XT6Xrum51Z8a9Iu5j9EewgngnJ/jfMdSnzgo7me3T432aOQ5uM7TXksIOe+l3JaQinMXxwqE9xNn3+GfekWkrYVIJ344C8Y3RC87LdRFKiXl9vXuRkT4vecnM7ttgDx7k3Hzo/gpPbh1qO3/2ZAYBVKG2mCzXRNZrg6IukrLP9ClEfHtcGaP2ECujBjP1tSXqNy9w96up7H7ynuAo/5BIVWwhFDTb4AfEZqHRhW8z/m9BLgNCN3+VVdz1BJiXTi3coQgdu4bgA2Il0KXzX+kH8vUJN466xVnkKhevd8A9zVNusl5hBhIkI+pZRHL4+AMahpYUtX5hUB9uJZ36qchCYoutHL1dvBrCiyb1uwSTfncDOLFTvLN9woL2ktmctTXYWNU9aQ7Z3hGI=
