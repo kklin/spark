@@ -1,4 +1,4 @@
-const { Container, Service, publicInternet } = require('@quilt/quilt');
+const { Container, allow, publicInternet } = require('@quilt/quilt');
 
 let image = 'quilt/spark';
 
@@ -21,47 +21,48 @@ function getHostname(c) {
  *
  * @param {number} nMaster The number of masters to boot.
  * @param {number} nWorker The number of workers to boot.
- * @param {Service} [zookeeper] The Zookeeper service used to coordinate the
+ * @param {Container[]} [zookeeper] The Zookeeper containers used to coordinate the
  * Spark masters.
  */
 function Spark(nMaster, nWorker, zookeeper) {
-  const dkms = new Container(image, ['run', 'master']).replicate(nMaster);
-  dkms.forEach((dkm) => {
-    dkm.setHostname('spark-ms');
+  const refMaster = new Container('spark-ms', image, {
+    command: ['run', 'master'],
   });
+  this.masters = refMaster.replicate(nMaster);
 
   if (zookeeper) {
     const zooHosts = zookeeper.containers.map(getHostname);
     const zooHostsStr = zooHosts.join(',');
-    dkms.forEach((master) => {
+    this.masters.forEach((master) => {
       master.setEnv('ZOO', zooHostsStr);
     });
   }
 
-  this.masters = new Service('spark-ms', dkms);
+  const masterHosts = this.masters.map(getHostname);
+  const refWorker = new Container('spark-wk', image, {
+    command: ['run', 'worker'],
+    env: {
+      MASTERS: masterHosts.join(','),
+    },
+  });
+  this.workers = refWorker.replicate(nWorker);
 
-  const masterHosts = this.masters.containers.map(getHostname);
-  const dkws = new Container(image, ['run', 'worker'])
-    .withEnv({ MASTERS: masterHosts.join(',') })
-    .replicate(nWorker);
-  this.workers = new Service('spark-wk', dkws);
-
-  this.workers.allowFrom(this.workers, 7077);
-  this.masters.allowFrom(this.workers, 7077);
+  allow(this.workers, this.workers, 7077);
+  allow(this.workers, this.masters, 7077);
   if (zookeeper) {
-    zookeeper.allowFrom(this.masters, 2181);
+    allow(this.masters, zookeeper, 2181);
   }
 
   this.job = function job(command) {
-    this.masters.containers.forEach((master) => {
+    this.masters.forEach((master) => {
       master.setEnv('JOB', command);
     });
     return this;
   };
 
   this.exposeUIToPublic = function exposeUIToPublic() {
-    this.masters.allowFrom(publicInternet, 8080);
-    this.workers.allowFrom(publicInternet, 8081);
+    allow(publicInternet, this.masters, 8080);
+    allow(publicInternet, this.workers, 8081);
     return this;
   };
 
