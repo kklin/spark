@@ -12,6 +12,6 @@
     "gulp-if": "^2.0.2"
   },
   "dependencies": {
-    "@quilt/quilt": "quilt/quilt"
+    "@quilt/quilt": "^0.3.0"
   }
 }
