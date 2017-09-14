@@ -25,10 +25,12 @@ function getHostname(c) {
  * Spark masters.
  */
 function Spark(nMaster, nWorker, zookeeper) {
-  const refMaster = new Container('spark-ms', image, {
-    command: ['run', 'master'],
-  });
-  this.masters = refMaster.replicate(nMaster);
+  this.masters = [];
+  for (let i = 0; i < nMaster; i += 1) {
+    this.masters.push(new Container('spark-ms', image, {
+      command: ['run', 'master'],
+    }));
+  }
 
   if (zookeeper) {
     const zooHosts = zookeeper.containers.map(getHostname);
@@ -39,13 +41,15 @@ function Spark(nMaster, nWorker, zookeeper) {
   }
 
   const masterHosts = this.masters.map(getHostname);
-  const refWorker = new Container('spark-wk', image, {
-    command: ['run', 'worker'],
-    env: {
-      MASTERS: masterHosts.join(','),
-    },
-  });
-  this.workers = refWorker.replicate(nWorker);
+  this.workers = [];
+  for (let i = 0; i < nWorker; i += 1) {
+    this.workers.push(new Container('spark-wk', image, {
+      command: ['run', 'worker'],
+      env: {
+        MASTERS: masterHosts.join(','),
+      },
+    }));
+  }
 
   allow(this.workers, this.workers, 7077);
   allow(this.workers, this.masters, 7077);
