@@ -28,4 +28,4 @@ const baseMachine = new Machine({
 });
 deployment.deploy(baseMachine.asMaster());
 deployment.deploy(baseMachine.asWorker().replicate(nWorker + 1));
-deployment.deploy(sprk);
+sprk.deploy(deployment);

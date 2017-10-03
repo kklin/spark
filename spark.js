@@ -71,8 +71,8 @@ function Spark(nMaster, nWorker, zookeeper) {
   };
 
   this.deploy = function deploy(deployment) {
-    deployment.deploy(this.masters);
-    deployment.deploy(this.workers);
+    this.masters.forEach(master => master.deploy(deployment));
+    this.workers.forEach(worker => worker.deploy(deployment));
   };
 }
 
