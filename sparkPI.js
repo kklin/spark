@@ -2,7 +2,7 @@ const {
   Machine,
   createDeployment,
   githubKeys,
-} = require('@quilt/quilt');
+} = require('kelda');
 const spark = require('./spark.js');
 
 const deployment = createDeployment({});

@@ -1,5 +1,5 @@
 {
-  "name": "@quilt/spark",
+  "name": "@kelda/spark",
   "version": "0.0.3",
   "main": "./spark.js",
   "license": "MIT",
@@ -12,6 +12,6 @@
     "gulp-if": "^2.0.2"
   },
   "dependencies": {
-    "@quilt/quilt": "quilt/quilt"
+    "kelda": "0.x"
   }
 }
