@@ -59,7 +59,7 @@ def worker():
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Quilt Spark Init Script')
+    parser = argparse.ArgumentParser(description='Kelda Spark Init Script')
     parser.add_argument("role", choices=["master", "worker"])
     args = parser.parse_args()
 

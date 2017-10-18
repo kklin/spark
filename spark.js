@@ -1,6 +1,6 @@
-const { Container, allow, publicInternet } = require('@quilt/quilt');
+const { Container, allow, publicInternet } = require('kelda');
 
-let image = 'quilt/spark';
+let image = 'keldaio/spark';
 
 /**
  * Change the Spark Docker image used to run the cluster.
