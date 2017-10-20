@@ -14,7 +14,7 @@ const nWorker = 3;
 // sprk.exposeUIToPublic says that the the public internet should be able
 // to connect to the Spark web interface. sprk.job causes Spark to run that
 // job when it boots.
-const sprk = new spark.Spark(1, nWorker)
+const sprk = new spark.Spark(nWorker)
   .exposeUIToPublic()
   .job('run-example SparkPi');
 

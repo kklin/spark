@@ -26,12 +26,6 @@ def grepFile(filename, substr):
 def master():
     wait()
 
-    if "ZOO" in os.environ:
-        servers = [s + ":2181" for s in os.environ["ZOO"].split(",")]
-        os.environ["SPARK_DAEMON_JAVA_OPTS"] = \
-                "-Dspark.deploy.recoveryMode=ZOOKEEPER" \
-                + " -Dspark.deploy.zookeeper.url=" + ",".join(servers)
-
     p = subprocess.Popen(["/spark/bin/spark-class",
         "org.apache.spark.deploy.master.Master"])
 
@@ -47,15 +41,12 @@ def master():
 def worker():
     wait()
 
-    if "MASTERS" not in os.environ:
-        print "Workers require MASTERS environment variable."
+    if "MASTER" not in os.environ:
+        print "Workers require MASTER environment variable."
         sys.exit(1)
 
-    masters = [s + ":7077" for s in os.environ["MASTERS"].split(",")]
-    masters = ",".join(masters)
-
     subprocess.check_call(["/spark/bin/spark-class",
-        "org.apache.spark.deploy.worker.Worker", "spark://" + masters])
+        "org.apache.spark.deploy.worker.Worker", os.environ["MASTER"]])
 
 
 def main():
