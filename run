@@ -7,15 +7,6 @@ import subprocess
 import time
 import sys
 
-def wait():
-    while True:
-        try:
-            socket.gethostbyname(socket.gethostname())
-        except socket.gaierror:
-            continue
-
-        return
-
 def grepFile(filename, substr):
     try:
         with open(filename, "r") as f:
@@ -24,8 +15,6 @@ def grepFile(filename, substr):
         return False
 
 def master():
-    wait()
-
     p = subprocess.Popen(["/spark/bin/spark-class",
         "org.apache.spark.deploy.master.Master"])
 
@@ -39,8 +28,6 @@ def master():
     p.communicate()
 
 def worker():
-    wait()
-
     if "MASTER" not in os.environ:
         print "Workers require MASTER environment variable."
         sys.exit(1)
