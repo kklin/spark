@@ -9,25 +9,6 @@ import sys
 import urllib2
 import string
 
-def grepFile(filename, substr):
-    try:
-        with open(filename, "r") as f:
-            return substr in f.read()
-    except IOError:
-        return False
-
-def master():
-    p = subprocess.Popen(["/spark/bin/spark-class",
-        "org.apache.spark.deploy.master.Master"])
-
-    while not grepFile("/spark/logs/spark.log", "Master: Registering worker"):
-        time.sleep(1)
-    time.sleep(5)
-
-    if "JOB" in os.environ:
-        subprocess.call(os.environ["JOB"], shell=True)
-
-    p.communicate()
 
 def worker():
     if "MASTER" not in os.environ:
@@ -49,7 +30,8 @@ def main():
     os.environ["SPARK_PUBLIC_DNS"] = publicIP
 
     if args.role == "master":
-        master()
+        subprocess.check_call(["/spark/bin/spark-class",
+            "org.apache.spark.deploy.master.Master"])
     elif args.role == "worker":
         worker()
 

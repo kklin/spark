@@ -13,7 +13,7 @@ before_script:
 
 script:
     - gulp lint
-    - ./kelda inspect ./sparkPI.js graphviz
+    - ./kelda inspect ./sparkRun.js graphviz
 
 notifications:
     slack:

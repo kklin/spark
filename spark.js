@@ -33,11 +33,6 @@ function Spark(nWorker) {
   allow(this.workers, this.workers, 7077);
   allow(this.workers, this.master, 7077);
 
-  this.job = function job(command) {
-    this.master.setEnv('JOB', command);
-    return this;
-  };
-
   this.exposeUIToPublic = function exposeUIToPublic() {
     allow(publicInternet, this.master, 8080);
     allow(publicInternet, this.workers, 8081);
