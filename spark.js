@@ -41,6 +41,12 @@ function Spark(nWorker) {
   this.exposeUIToPublic = function exposeUIToPublic() {
     allow(publicInternet, this.master, 8080);
     allow(publicInternet, this.workers, 8081);
+
+    // XXX: This is only necessary so that spark nodes can ask an external
+    // service what their public IP is.  Once this information can be passed in
+    // through an environment variable, these ACLs should be removed.
+    publicInternet.allowFrom(this.workers, 80);
+    publicInternet.allowFrom(this.master, 80);
     return this;
   };
 

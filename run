@@ -6,6 +6,8 @@ import socket
 import subprocess
 import time
 import sys
+import urllib2
+import string
 
 def grepFile(filename, substr):
     try:
@@ -40,6 +42,11 @@ def main():
     parser = argparse.ArgumentParser(description='Kelda Spark Init Script')
     parser.add_argument("role", choices=["master", "worker"])
     args = parser.parse_args()
+
+    publicIP = urllib2.urlopen("http://checkip.amazonaws.com/").read()
+    publicIP = string.strip(publicIP)
+
+    os.environ["SPARK_PUBLIC_DNS"] = publicIP
 
     if args.role == "master":
         master()
