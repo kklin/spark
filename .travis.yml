@@ -13,6 +13,7 @@ before_script:
 
 script:
     - gulp lint
+    - mkdir -p ~/.kelda/infra/ && mv ./testInfra.js ~/.kelda/infra/default.js
     - ./kelda inspect ./sparkRun.js graphviz
 
 notifications:

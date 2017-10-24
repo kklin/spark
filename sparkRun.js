@@ -1,29 +1,11 @@
-const {
-  Machine,
-  createDeployment,
-  githubKeys,
-} = require('kelda');
+const kelda = require('kelda');
 const spark = require('./spark.js');
 
-const deployment = createDeployment({});
+const inf = kelda.baseInfrastructure();
 
-// We will have three worker machines.
-const nWorker = 3;
+const workerVMs = inf.machines.filter(machine => machine.role === 'Worker');
 
-// Application
-// sprk.exposeUIToPublic says that the the public internet should be able
-// to connect to the Spark web interface.
-const sprk = new spark.Spark(nWorker)
-  .exposeUIToPublic();
+const s = new spark.Spark(workerVMs.length - 1);
+s.exposeUIToPublic();
 
-// Infrastructure
-const baseMachine = new Machine({
-  provider: 'Amazon',
-  region: 'us-west-1',
-  size: 'm4.large',
-  diskSize: 32,
-  sshKeys: githubKeys('ejj'), // Replace with your GitHub username.
-});
-deployment.deploy(baseMachine.asMaster());
-deployment.deploy(baseMachine.asWorker().replicate(nWorker + 1));
-sprk.deploy(deployment);
+inf.deploy(s);
