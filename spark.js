@@ -23,11 +23,18 @@ function Spark(nWorker) {
   // any Spark processes.
   const sparkEnvContent = fs.readFileSync(path.join(__dirname, 'spark-env.sh'),
     { encoding: 'utf8' });
-  const sparkEnvFilepathToContent = { '/spark/conf/spark-env.sh': sparkEnvContent };
+  // Add a spark-defaults.conf, which can be used to configure the default job
+  // configuration.
+  const sparkConfContent = fs.readFileSync(path.join(__dirname, 'spark-defaults.conf'),
+    { encoding: 'utf8' });
+  const sparkConfigFiles = {
+    '/spark/conf/spark-env.sh': sparkEnvContent,
+    '/spark/conf/spark-defaults.conf': sparkConfContent,
+  };
 
   this.master = new Container('spark-ms', image, {
     command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
-    filepathToContent: sparkEnvFilepathToContent,
+    filepathToContent: sparkConfigFiles,
   });
   const masterURL = `spark://${this.master.getHostname()}:7077`;
   this.master.setEnv('MASTER', masterURL);
@@ -40,12 +47,24 @@ function Spark(nWorker) {
         'org.apache.spark.deploy.worker.Worker',
         masterURL,
       ],
-      filepathToContent: sparkEnvFilepathToContent,
+      filepathToContent: sparkConfigFiles,
     }));
   }
 
   allow(this.workers, this.workers, 7077);
+  // Allow Spark workers to access the Spark Standalone Master.
   allow(this.workers, this.master, 7077);
+  // Allow Spark workers to access the Spark driver (this port is configured
+  // in spark-defaults.conf).
+  allow(this.workers, this.master, 36666);
+  // Allow Spark workers to access the Spark block manager, on both the
+  // master and on all of the other Spark workers (this is used to fetch
+  // task information from the master and to fetch data from other
+  // workers). This port is configured in spark-defaults.conf.
+  const sparkBlockManagerPort = 36667;
+  allow(this.workers, this.workers, sparkBlockManagerPort);
+  allow(this.workers, this.master, sparkBlockManagerPort);
+  allow(this.master, this.workers, sparkBlockManagerPort);
 
   // XXX: This is only necessary so that spark nodes can ask an external
   // service what their public IP is.  Once this information can be passed in
