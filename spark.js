@@ -40,8 +40,15 @@ function Spark(nWorker) {
   publicInternet.allowFrom(this.master, 80);
 
   this.exposeUIToPublic = function exposeUIToPublic() {
+    // Expose the Standalone master UI (which shows all of the workers and all of
+    // the applications that have run).
     allow(publicInternet, this.master, 8080);
     allow(publicInternet, this.workers, 8081);
+
+    // Expose the per-job UI (which shows each application).
+    // This will only work when there's only one job; otherwise, the UI will use
+    // increasing port numbers for the other jobs, and those will not be accessible.
+    allow(publicInternet, this.master, 4040);
 
     return this;
   };
