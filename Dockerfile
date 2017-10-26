@@ -15,5 +15,4 @@ RUN apt-get update && apt-get install -y \
 
 ENV PATH /spark/sbin:/spark/bin:$PATH
 
-COPY run /bin/
 COPY log4j.properties /spark/conf

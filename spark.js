@@ -26,7 +26,7 @@ function Spark(nWorker) {
   const sparkEnvFilepathToContent = { '/spark/conf/spark-env.sh': sparkEnvContent };
 
   this.master = new Container('spark-ms', image, {
-    command: ['run', 'master'],
+    command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
     filepathToContent: sparkEnvFilepathToContent,
   });
   const masterURL = `spark://${this.master.getHostname()}:7077`;
@@ -35,8 +35,12 @@ function Spark(nWorker) {
   this.workers = [];
   for (let i = 0; i < nWorker; i += 1) {
     this.workers.push(new Container('spark-wk', image, {
-      command: ['run', 'worker'],
-      env: { MASTER: masterURL },
+      command: [
+        '/spark/bin/spark-class',
+        'org.apache.spark.deploy.worker.Worker',
+        masterURL,
+      ],
+      filepathToContent: sparkEnvFilepathToContent,
     }));
   }
 
