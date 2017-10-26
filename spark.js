@@ -18,15 +18,15 @@ function setImage(newImage) {
  */
 function Spark(nWorker) {
   this.master = new Container('spark-ms', image,
-    { command: ['run', 'master'] });
+      { command: ['run', 'master'] });
+  const masterURL = `spark://${this.master.getHostname()}:7077`;
+  this.master.setEnv('MASTER', masterURL);
 
   this.workers = [];
   for (let i = 0; i < nWorker; i += 1) {
     this.workers.push(new Container('spark-wk', image, {
       command: ['run', 'worker'],
-      env: {
-        MASTER: `spark://${this.master.getHostname()}:7077`,
-      },
+      env: { MASTER: masterURL },
     }));
   }
 
