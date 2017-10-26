@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { Container, allow, publicInternet } = require('kelda');
 
 let image = 'keldaio/spark';
@@ -17,8 +19,16 @@ function setImage(newImage) {
  * @param {number} nWorker The number of workers to boot.
  */
 function Spark(nWorker) {
-  this.master = new Container('spark-ms', image,
-      { command: ['run', 'master'] });
+  // Set a spark-env.sh file on each machine, which will be sourced before starting
+  // any Spark processes.
+  const sparkEnvContent = fs.readFileSync(path.join(__dirname, 'spark-env.sh'),
+    { encoding: 'utf8' });
+  const sparkEnvFilepathToContent = { '/spark/conf/spark-env.sh': sparkEnvContent };
+
+  this.master = new Container('spark-ms', image, {
+    command: ['run', 'master'],
+    filepathToContent: sparkEnvFilepathToContent,
+  });
   const masterURL = `spark://${this.master.getHostname()}:7077`;
   this.master.setEnv('MASTER', masterURL);
 
