@@ -3,7 +3,6 @@ Maintainer Ethan J. Jackson
 
 RUN apt-get update && apt-get install -y \
         default-jre-headless \
-        python-minimal \
 	# wget is used to download Spark, and is used once the container starts to
 	# get the container's public IP address by reading checkip.amazonaws.com.
 	# This can be removed once Kelda has a mechanism to set an environment variable
