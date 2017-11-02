@@ -12,6 +12,13 @@ RUN apt-get update && apt-get install -y \
 && mv /spark* /spark \
 && rm -rf /var/lib/lists/* /tmp/* /var/tmp/*
 
+# Create a directory for the Spark event log, which stores information about
+# past jobs that have completed. Spark requires this directory to be created;
+# Spark will not create the directory itself. This filepath is the default
+# location that Spark uses.  If the user changes the default location by
+# configuring spark.eventLog.dir, this path will need to be updated to match.
+RUN mkdir -p /tmp/spark-events
+
 ENV PATH /spark/sbin:/spark/bin:$PATH
 
 COPY log4j.properties /spark/conf

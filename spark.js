@@ -33,7 +33,9 @@ function Spark(nWorker) {
   };
 
   this.master = new Container('spark-ms', image, {
-    command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
+    command: ['sh', '-c',
+      '/spark/sbin/start-history-server.sh && ' +
+      '/spark/bin/spark-class org.apache.spark.deploy.master.Master'],
     filepathToContent: sparkConfigFiles,
   });
   const masterURL = `spark://${this.master.getHostname()}:7077`;
@@ -77,6 +79,7 @@ function Spark(nWorker) {
     // the applications that have run).
     allow(publicInternet, this.master, 8080);
     allow(publicInternet, this.workers, 8081);
+    allow(publicInternet, this.master, 18080);
 
     // Expose the per-job UI (which shows each application).
     // This will only work when there's only one job; otherwise, the UI will use
