@@ -14,11 +14,12 @@ function setImage(newImage) {
 }
 
 /**
- * Spark creates a Spark cluster (a master and a collection of workers).
- *
- * @param {number} nWorker The number of workers to boot.
+ * @returns {Object.<String,String>} Spark configuration files that should be added
+ *   to all masters and workers in a Spark cluster.  The files are returned in the
+ *   format expected by the Container filepathToContents argument (i.e., as a mapping
+ *   of filenames to the contents of that file).
  */
-function Spark(nWorker) {
+function getConfigFiles() {
   // Set a spark-env.sh file on each machine, which will be sourced before starting
   // any Spark processes.
   const sparkEnvContent = fs.readFileSync(path.join(__dirname, 'spark-env.sh'),
@@ -27,10 +28,25 @@ function Spark(nWorker) {
   // configuration.
   const sparkConfContent = fs.readFileSync(path.join(__dirname, 'spark-defaults.conf'),
     { encoding: 'utf8' });
+
+  // Add the log4j configuration, which manages the log format and verbosity.
+  const log4jConfigContent = fs.readFileSync(path.join(__dirname, 'log4j.properties'),
+    { encoding: 'utf8' });
   const sparkConfigFiles = {
     '/spark/conf/spark-env.sh': sparkEnvContent,
     '/spark/conf/spark-defaults.conf': sparkConfContent,
+    '/spark/conf/log4j.properties': log4jConfigContent,
   };
+  return sparkConfigFiles;
+}
+
+/**
+ * Spark creates a Spark cluster (a master and a collection of workers).
+ *
+ * @param {number} nWorker The number of workers to boot.
+ */
+function Spark(nWorker) {
+  const sparkConfigFiles = getConfigFiles();
 
   this.master = new Container('spark-ms', image, {
     command: ['sh', '-c',

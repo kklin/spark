@@ -20,5 +20,3 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /tmp/spark-events
 
 ENV PATH /spark/sbin:/spark/bin:$PATH
-
-COPY log4j.properties /spark/conf
