@@ -40,56 +40,58 @@ function getConfigFiles() {
   return sparkConfigFiles;
 }
 
-/**
- * Spark creates a Spark cluster (a master and a collection of workers).
- *
- * @param {number} nWorker The number of Spark worker containers to create.
- */
-function Spark(nWorker) {
-  const sparkConfigFiles = getConfigFiles();
+class Spark {
+  /**
+   * Creates a Spark cluster (a master and a collection of workers).
+   *
+   * @param {number} nWorker The number of Spark worker containers to create.
+   */
+  constructor(nWorker) {
+    const sparkConfigFiles = getConfigFiles();
 
-  this.master = new Container('spark-ms', image, {
-    command: ['sh', '-c',
-      '/spark/sbin/start-history-server.sh && ' +
-      '/spark/bin/spark-class org.apache.spark.deploy.master.Master'],
-    filepathToContent: sparkConfigFiles,
-  });
-  const masterURL = `spark://${this.master.getHostname()}:7077`;
-  this.master.setEnv('MASTER', masterURL);
-
-  this.workers = [];
-  for (let i = 0; i < nWorker; i += 1) {
-    this.workers.push(new Container('spark-wk', image, {
-      command: [
-        '/spark/bin/spark-class',
-        'org.apache.spark.deploy.worker.Worker',
-        masterURL,
-      ],
+    this.master = new Container('spark-ms', image, {
+      command: ['sh', '-c',
+        '/spark/sbin/start-history-server.sh && ' +
+        '/spark/bin/spark-class org.apache.spark.deploy.master.Master'],
       filepathToContent: sparkConfigFiles,
-    }));
+    });
+    const masterURL = `spark://${this.master.getHostname()}:7077`;
+    this.master.setEnv('MASTER', masterURL);
+
+    this.workers = [];
+    for (let i = 0; i < nWorker; i += 1) {
+      this.workers.push(new Container('spark-wk', image, {
+        command: [
+          '/spark/bin/spark-class',
+          'org.apache.spark.deploy.worker.Worker',
+          masterURL,
+        ],
+        filepathToContent: sparkConfigFiles,
+      }));
+    }
+
+    // Allow Spark workers to access the Spark Standalone Master.
+    allow(this.workers, this.master, 7077);
+    // Allow Spark workers to access the Spark driver (this port is configured
+    // in spark-defaults.conf).
+    allow(this.workers, this.master, 36666);
+    // Allow Spark workers to access the Spark block manager, on both the
+    // master and on all of the other Spark workers (this is used to fetch
+    // task information from the master and to fetch data from other
+    // workers). This port is configured in spark-defaults.conf.
+    const sparkBlockManagerPort = 36667;
+    allow(this.workers, this.workers, sparkBlockManagerPort);
+    allow(this.workers, this.master, sparkBlockManagerPort);
+    allow(this.master, this.workers, sparkBlockManagerPort);
+
+    // XXX: This is only necessary so that spark nodes can ask an external
+    // service what their public IP is.  Once this information can be passed in
+    // through an environment variable, these ACLs should be removed.
+    publicInternet.allowFrom(this.workers, 80);
+    publicInternet.allowFrom(this.master, 80);
   }
 
-  // Allow Spark workers to access the Spark Standalone Master.
-  allow(this.workers, this.master, 7077);
-  // Allow Spark workers to access the Spark driver (this port is configured
-  // in spark-defaults.conf).
-  allow(this.workers, this.master, 36666);
-  // Allow Spark workers to access the Spark block manager, on both the
-  // master and on all of the other Spark workers (this is used to fetch
-  // task information from the master and to fetch data from other
-  // workers). This port is configured in spark-defaults.conf.
-  const sparkBlockManagerPort = 36667;
-  allow(this.workers, this.workers, sparkBlockManagerPort);
-  allow(this.workers, this.master, sparkBlockManagerPort);
-  allow(this.master, this.workers, sparkBlockManagerPort);
-
-  // XXX: This is only necessary so that spark nodes can ask an external
-  // service what their public IP is.  Once this information can be passed in
-  // through an environment variable, these ACLs should be removed.
-  publicInternet.allowFrom(this.workers, 80);
-  publicInternet.allowFrom(this.master, 80);
-
-  this.exposeUIToPublic = function exposeUIToPublic() {
+  exposeUIToPublic() {
     // Expose the Standalone master UI (which shows all of the workers and all of
     // the applications that have run).
     allow(publicInternet, this.master, 8080);
@@ -102,12 +104,12 @@ function Spark(nWorker) {
     allow(publicInternet, this.master, 4040);
 
     return this;
-  };
+  }
 
-  this.deploy = function deploy(deployment) {
+  deploy(deployment) {
     this.master.deploy(deployment);
     this.workers.forEach(worker => worker.deploy(deployment));
-  };
+  }
 }
 
 exports.setImage = setImage;
