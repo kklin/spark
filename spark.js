@@ -69,7 +69,6 @@ function Spark(nWorker) {
     }));
   }
 
-  allow(this.workers, this.workers, 7077);
   // Allow Spark workers to access the Spark Standalone Master.
   allow(this.workers, this.master, 7077);
   // Allow Spark workers to access the Spark driver (this port is configured
