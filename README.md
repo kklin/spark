@@ -45,12 +45,12 @@ $ kelda run ./sparkRun.js
 This will use the blueprint `sparkRun.js` to launch a cluster of Spark workers
 and a Spark master. It will take a bit for the VMs to boot up, for Kelda to
 configure the network, and for Docker containers to be initialized. The command
-`kelda ps` provides useful information about the VMs and containers in the
+`kelda show` provides useful information about the VMs and containers in the
 deployment. The following output reports that the Master VM's public IP is
 `54.193.66.67`:
 
 ```
-$ kelda ps
+$ kelda show
 MACHINE         ROLE      PROVIDER    REGION       SIZE        PUBLIC IP         CONNECTED
 12c000f87ccf    Master    Amazon      us-west-1    m4.large    54.193.66.67      true
 4316db8165d3    Worker    Amazon      us-west-1    m4.large    54.183.187.137    true
@@ -64,11 +64,11 @@ Once a machine is `CONNECTED`, you can ssh into to the VM with the command
 `kelda ssh <MACHINE_ID>`, (for the machines above, `kelda ssh 12c`) or manually
 with `ssh kelda@<PUBLIC_IP>`.
 
-To list all active containers in the cluster, execute `kelda ps` again, and
+To list all active containers in the cluster, execute `kelda show` again, and
 look for `CONTAINER` at the end of the output.  For example:
 
 ```
-$ kelda ps
+$ kelda show
 ...
 CONTAINER       MACHINE         COMMAND                   LABELS      STATUS     CREATED           PUBLIC IP
 13d6b800086a    4316db8165d3    keldaio/spark run master  spark-ms    running    34 seconds ago    54.183.187.137:8080
