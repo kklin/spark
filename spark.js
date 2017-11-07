@@ -51,7 +51,7 @@ class Spark {
   constructor(nWorker) {
     const sparkConfigFiles = getConfigFiles();
 
-    this.master = new Container('spark-ms', image, {
+    this.master = new Container('spark-master', image, {
       command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
       filepathToContent: sparkConfigFiles,
     });
@@ -60,7 +60,7 @@ class Spark {
 
     this.workers = [];
     for (let i = 0; i < nWorker; i += 1) {
-      this.workers.push(new Container('spark-wk', image, {
+      this.workers.push(new Container('spark-worker', image, {
         command: [
           '/spark/bin/spark-class',
           'org.apache.spark.deploy.worker.Worker',
