@@ -43,7 +43,7 @@ function getConfigFiles() {
 /**
  * Spark creates a Spark cluster (a master and a collection of workers).
  *
- * @param {number} nWorker The number of workers to boot.
+ * @param {number} nWorker The number of Spark worker containers to create.
  */
 function Spark(nWorker) {
   const sparkConfigFiles = getConfigFiles();
