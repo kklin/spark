@@ -1,6 +1,17 @@
-# Spark for Kelda.js
-This document describes how to run Apache Spark on [Kelda](http://docs.kelda.io)
-and launch a job.
+# Using Kelda.js to Launch and Manage Spark Clusters
+
+[Kelda](http://docs.kelda.io) makes it easy to launch and manage an
+[Apache Spark](http://spark.apache.org) cluster on any cloud provider. This
+repository contains a Kelda blueprint, which is a description of how to start
+a Spark cluster. Once you have Kelda installed, you can launch a collection of
+machines on a cloud provider and configure and launch Spark simply by running:
+
+```console
+$ kelda run ./sparkRun.js
+```
+
+Installing Kelda and configuring a Spark cluster is described in more detail
+below.
 
 ## Download the blueprint in this repository
 
@@ -86,7 +97,7 @@ blueprint also creates a container with hostname `spark-master` that runs the Sp
 Standalone Scheduler Master (which handles scheduling Spark applications), and many
 Spark worker containers, which run tasks for Spark jobs.
 
-## Running Jobs
+## Run Jobs
 
 Users can run Spark jobs using the `spark-driver` container.  This container is configured
 to automatically submit jobs to the standalone master to be scheduled, and the network
@@ -99,7 +110,7 @@ above:
 $ kelda ssh 9f7ee
 ```
 
-All of the Spark commands are included in the container path.  To launch the Spark shell,
+All of the Spark commands are included in the container's path.  To launch the Spark shell,
 once SSH'ed into the container, run `spark-shell`:
 
 ```console
@@ -139,5 +150,46 @@ looks like:
 Pi is roughly 3.13959569797849
 ```
 
-### More information
+### Use the Spark UI
+
+The Kelda Spark blueprint opens all of the ports necessary to access the various
+Spark UIs:
+* **Application (Per-Job) UI** The UI for a particular application is available
+on port 4040 on the `spark-driver` machine. This is typically the most useful UI
+for debugging performance of the tasks in a particular workload. The full URL
+of the application UI is printed when starting a Spark shell (as in the example
+UI above), and it's also shown in the `PUBLIC IP` column of the `kelda show`
+container output.
+* **History Server UI** Sometimes it's helpful to get information about a job or
+application that has already completed (so the application UI is no longer up).
+This UI is running on port 18080 on `spark-driver`.
+* **Spark Standalone Master UI** This Kelda Spark blueprint currently uses
+Spark's standalone scheduler to schedule applications on worker machines. The
+standalone scheduler runs on the `spark-master` machine, and runs a UI on port
+8080 of that machine. As with the other UIs, the full address of this UI is
+shown in the `PUBLIC IP` column of the `kelda show` container output. This
+UI shows all of the workers in the Spark cluster.
+
+For more information about the various Spark UIs, refer to the Spark
+documentation.
+
+## More information
 See [Kelda](http://kelda.io) for more information about Kelda.js.
+
+## FAQ
+
+### Can I run multiple concurrent jobs?
+
+This blueprint currently only supports running one job at a time,
+because when a job starts, the Spark standalone scheduler will
+allocate all of the resources in the cluster to that job.
+
+### Can I submit jobs from my own computer instead of from the `spark-driver` container?
+
+No. Kelda sets up a network firewall that, by default, denies all connections
+to and from machines launched with Kelda.  The Spark blueprint, `spark.js`,
+opens access on the necessary ports for Spark to run, so that, for example,
+the `spark-driver` machine can communicate with the scheduler and the worker
+machines. Kelda _only_ allows these connections from the `spark-driver` machine
+(as a security precaution), so your computer won't be able to communicate with
+the machines in the Spark cluster.
