@@ -14,15 +14,35 @@ function setImage(newImage) {
 }
 
 /**
- * @param {number} memoryGB - The amount of memory that each Spark executor should
- *   be configured to use. See the Spark class documentation for more on how to
- *   set this.
+ * Determine how much memory (in mebibytes) should be allocated to each Spark worker,
+ * based on the properties of the given machine. This functionality is designed to
+ * match how the Spark Standalone scheduler determines how much memory is available
+ * on each worker: it determines the memory available on the machine, and then subtracts
+ * 1GiB for the operating system to use (e.g., for the buffer cache).
+ *
+ * @param {Machine} machine - A virtual machine that Spark will be running on.
+ * @returns {number} The amount of memory, in mebibytes, that Spark should use
+ *   on the given machine.  One mebibyte is 1024 * 1024 bytes.
+ */
+function getWorkerMemoryMiB(machine) {
+  const memoryGigabytes = machine.ram;
+  // Convert the memory to mebibytes, which is what Spark expects (we use mebibytes
+  // rather than gibibytes, because Spark only allows integer amounts of memory, so
+  // we use mebibytes to allow finer-grained memory allocations).
+  const memoryMebibytes = (memoryGigabytes * 1000 * 1000 * 1000) / (1024 * 1024);
+  return memoryMebibytes - 1024;
+}
+
+/**
+ * @param {int} memoryMiB - The amount of memory (in mebibytes) that each Spark
+ *   executor should be configured to use. See the Spark class documentation for
+ *   more on how to set this.
  * @returns {Object.<String,String>} Spark configuration files that should be added
  *   to all masters and workers in a Spark cluster.  The files are returned in the
  *   format expected by the Container filepathToContents argument (i.e., as a mapping
  *   of filenames to the contents of that file).
  */
-function getConfigFiles(memoryGB) {
+function getConfigFiles(memoryMiB) {
   // Set a spark-env.sh file on each machine, which will be sourced before starting
   // any Spark processes.
   const sparkEnvContent = fs.readFileSync(path.join(__dirname, 'spark-env.sh'),
@@ -31,11 +51,8 @@ function getConfigFiles(memoryGB) {
   // configuration.
   let sparkConfContent = fs.readFileSync(path.join(__dirname, 'spark-defaults.conf'),
     { encoding: 'utf8' });
-  // Add configuration for how much memory Spark should use. Convert the memory to MB,
-  // because Spark doesn't accept fractional values, and rounding to the nearest GB
-  // loses too much accuracy.
-  const memoryMB = Math.round(1024 * memoryGB);
-  sparkConfContent += `\nspark.executor.memory ${memoryMB}m`;
+  // Add configuration for how much memory Spark should use.
+  sparkConfContent += `\nspark.executor.memory ${memoryMiB}m`;
 
   // Add the log4j configuration, which manages the log format and verbosity.
   const log4jConfigContent = fs.readFileSync(path.join(__dirname, 'log4j.properties'),
@@ -55,12 +72,14 @@ class Spark {
    * run a Spark application.
    *
    * @param {number} nWorker The number of Spark worker containers to create.
-   * @param {number} [memoryGB=1] The amount of memory (in GB) that each Spark executor should be
-   *   given.  When Spark is running in isolation, this should be set to roughly 90%
-   *   of the memory on the worker machine (to leave room for the worker process, the OS, etc.).
+   * @param {number} [memoryMiB=1024] The amount of memory (in mebibytes) that each Spark worker
+   *   (and each executor) should be given.  The getWorkerMemoryMiB function can be used to
+   *   determine an appropriate setting of this value for a particular machine.
    */
-  constructor(nWorker, memoryGB = 1) {
-    const sparkConfigFiles = getConfigFiles(memoryGB);
+  constructor(nWorker, memoryMiB = 1024) {
+    // Spark only accepts integer values for the amount of memory, so round the input.
+    const memoryMiBInt = Math.round(memoryMiB);
+    const sparkConfigFiles = getConfigFiles(memoryMiBInt);
 
     this.master = new Container('spark-master', image, {
       command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
@@ -75,6 +94,8 @@ class Spark {
         command: [
           '/spark/bin/spark-class',
           'org.apache.spark.deploy.worker.Worker',
+          '--memory',
+          `${memoryMiBInt}MB`,
           this.masterURL,
         ],
         filepathToContent: sparkConfigFiles,
@@ -168,4 +189,5 @@ class Spark {
 }
 
 exports.setImage = setImage;
+exports.getWorkerMemoryMiB = getWorkerMemoryMiB;
 exports.Spark = Spark;
