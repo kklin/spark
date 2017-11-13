@@ -164,9 +164,8 @@ class Spark {
 
     const driverHostname = this.driver.hostname;
     console.log(`Spark driver started with hostname "${driverHostname}". ` +
-      'To run a Spark job:\n(1) Use `kelda show` to find the ID of the container ' +
-      `with hostname "${driverHostname}"\n(2) Use \`kelda ssh\` to login to that ` +
-      'container\n(3) Run a job, e.g., by running `spark-submit` or `spark-shell`');
+      `To run a Spark job:\n(1) Use \`kelda ssh ${driverHostname}\` to login to the ` +
+      'driver container\n(2) Run a job, e.g., by running `spark-submit` or `spark-shell`');
   }
 
   exposeUIToPublic() {
