@@ -102,12 +102,10 @@ Spark worker containers, which run tasks for Spark jobs.
 Users can run Spark jobs using the `spark-driver` container.  This container is configured
 to automatically submit jobs to the standalone master to be scheduled, and the network
 for this container is configured to allow public access to the Spark UI.  To login to the
-Spark driver, find the container ID corresponding to the container with hostname
-`spark-driver`, and use the `kelda ssh` command.  For example, for the `kelda show` output
-above:
+Spark driver, simply use the `kelda ssh` command.  For example:
 
 ```console
-$ kelda ssh 9f7ee
+$ kelda ssh spark-driver
 ```
 
 All of the Spark commands are included in the container's path.  To launch the Spark shell,
@@ -139,7 +137,7 @@ You can `ssh` into the container, as above, or you can run the job by passing a
 command into `kelda ssh`:
 
 ```console
-$ kelda ssh 9f7ee run-example SparkPi
+$ kelda ssh spark-driver run-example SparkPi
 ```
 
 This command will launch a Spark job, and the jobs will be printed to
