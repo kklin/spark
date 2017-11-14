@@ -71,15 +71,21 @@ class Spark {
    * a master container (which handles scheduling), and a container that the user can use to
    * run a Spark application.
    *
-   * @param {number} nWorker The number of Spark worker containers to create.
-   * @param {number} [memoryMiB=1024] The amount of memory (in mebibytes) that each Spark worker
-   *   (and each executor) should be given.  The getWorkerMemoryMiB function can be used to
+   * @param {number} nWorker - The number of Spark worker containers to create.
+   * @param {Object} opts - Optional additional arguments to configure Spark.
+   * @param {number} [opts.memoryMiB=1024] - The amount of memory (in mebibytes) that each Spark
+   *   worker (and each executor) should be given. The getWorkerMemoryMiB function can be used to
    *   determine an appropriate setting of this value for a particular machine.
    */
-  constructor(nWorker, memoryMiB = 1024) {
-    // Spark only accepts integer values for the amount of memory, so round the input.
-    const memoryMiBInt = Math.round(memoryMiB);
-    const sparkConfigFiles = getConfigFiles(memoryMiBInt);
+  constructor(nWorker, opts = {}) {
+    let memoryMiB = opts.memoryMiB;
+    if (memoryMiB === undefined) {
+      memoryMiB = 1024;
+    } else {
+      // Spark only accepts integer values for the amount of memory, so round the input.
+      memoryMiB = Math.round(memoryMiB);
+    }
+    const sparkConfigFiles = getConfigFiles(memoryMiB);
 
     this.master = new Container('spark-master', image, {
       command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
@@ -95,7 +101,7 @@ class Spark {
           '/spark/bin/spark-class',
           'org.apache.spark.deploy.worker.Worker',
           '--memory',
-          `${memoryMiBInt}MB`,
+          `${memoryMiB}MB`,
           this.masterURL,
         ],
         filepathToContent: sparkConfigFiles,
