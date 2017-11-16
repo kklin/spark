@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Container, allow, publicInternet } = require('kelda');
+const { Container, allow, hostIP, publicInternet } = require('kelda');
 
 let image = 'keldaio/spark';
 
@@ -43,10 +43,6 @@ function getWorkerMemoryMiB(machine) {
  *   of filenames to the contents of that file).
  */
 function getConfigFiles(memoryMiB) {
-  // Set a spark-env.sh file on each machine, which will be sourced before starting
-  // any Spark processes.
-  const sparkEnvContent = fs.readFileSync(path.join(__dirname, 'spark-env.sh'),
-    { encoding: 'utf8' });
   // Add a spark-defaults.conf, which can be used to configure the default job
   // configuration.
   let sparkConfContent = fs.readFileSync(path.join(__dirname, 'spark-defaults.conf'),
@@ -58,7 +54,6 @@ function getConfigFiles(memoryMiB) {
   const log4jConfigContent = fs.readFileSync(path.join(__dirname, 'log4j.properties'),
     { encoding: 'utf8' });
   const sparkConfigFiles = {
-    '/spark/conf/spark-env.sh': sparkEnvContent,
     '/spark/conf/spark-defaults.conf': sparkConfContent,
     '/spark/conf/log4j.properties': log4jConfigContent,
   };
@@ -90,6 +85,7 @@ class Spark {
     this.master = new Container('spark-master', image, {
       command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
       filepathToContent: sparkConfigFiles,
+      env: { SPARK_PUBLIC_DNS: hostIP },
     });
     this.masterPort = 7077;
     this.masterURL = `spark://${this.master.getHostname()}:${this.masterPort}`;
@@ -105,16 +101,12 @@ class Spark {
           this.masterURL,
         ],
         filepathToContent: sparkConfigFiles,
+        env: { SPARK_PUBLIC_DNS: hostIP },
       }));
     }
 
     // Allow Spark workers to access the Spark Standalone Master.
     allow(this.workers, this.master, this.masterPort);
-    // XXX: This is only necessary so that spark nodes can ask an external
-    // service what their public IP is.  Once this information can be passed in
-    // through an environment variable, these ACLs should be removed.
-    publicInternet.allowFrom(this.workers, 80);
-    publicInternet.allowFrom(this.master, 80);
 
     // Add a container to run the Spark Driver, which manages a particular
     // application. This container should be used to launch user jobs.
@@ -139,7 +131,7 @@ class Spark {
       // to ensure that the container doesn't exit.
       command: ['sh', '-c', '/spark/sbin/start-history-server.sh && tail -f /dev/null'],
       filepathToContent: configFiles,
-      env: { MASTER: this.masterURL },
+      env: { MASTER: this.masterURL, SPARK_PUBLIC_DNS: hostIP },
     });
 
     // Allow the driver to connect to the standalone master.
@@ -157,10 +149,6 @@ class Spark {
     allow(this.workers, this.workers, sparkBlockManagerPort);
     allow(this.workers, this.driver, sparkBlockManagerPort);
     allow(this.driver, this.workers, sparkBlockManagerPort);
-
-    // XXX: This is only necessary so that the driver can learn its public IP
-    // (see note above).
-    publicInternet.allowFrom(this.driver, 80);
 
     const driverHostname = this.driver.hostname;
     console.log(`Spark driver started with hostname "${driverHostname}". ` +
