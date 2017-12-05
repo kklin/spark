@@ -4,7 +4,7 @@ Maintainer Ethan J. Jackson
 RUN apt-get update && apt-get install -y \
         default-jre-headless \
         wget \
-&& wget -qO- http://www-us.apache.org/dist/spark/spark-2.2.0/spark-2.2.0-bin-hadoop2.7.tgz | tar -xzf - \
+&& wget -qO- https://www-us.apache.org/dist/spark/spark-2.2.0/spark-2.2.0-bin-hadoop2.7.tgz | tar -xzf - \
 && mv /spark* /spark \
 # Add the AWS jars so Spark can connect to S3.
 && wget -q -O /spark/jars/aws-java-sdk.jar https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk/1.7.4/aws-java-sdk-1.7.4.jar \
