@@ -171,6 +171,46 @@ UI shows all of the workers in the Spark cluster.
 For more information about the various Spark UIs, refer to the Spark
 documentation.
 
+### Read input data from S3
+
+Spark jobs often need to read input data from S3. To read data from S3, you'll
+need to specify a set of AWS access keys.  There are many ways to set these
+keys; one way is to use the `spark.hadoop.fs.s3a.access.key` and
+`spark.hadoop.fs.s3a.secret.key` Spark configuration properties.  For example,
+to start a Spark shell with these properties:
+
+```console
+$ spark-shell --conf spark.hadoop.fs.s3a.access.key=<aws access key id> --conf spark.hadoop.fs.s3a.secret.key=<aws secret access key>
+```
+<!---
+There are at least two other ways of configuring these keys (listed here as a
+comment so that we have a log of them in case we'd like to include them in
+the documentation later):
+(1) The user can set the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment
+variables on the container named spark-driver.
+(2) The user can set the configuration properties using Scala code (which can
+be done in an already running shell, for example):
+> sc.hadoopConfiguration.set("fs.s3a.access.key", "<key id here>")
+> sc.hadoopConfiguration.set("fs.s3a.secret.key", "<secret key here>")
+-->
+
+Then you can read data from S3 using the S3 url; e.g., in the shell:
+
+```scala
+scala> val s3Rdd = sc.textFile("s3a://my-bucket-name/my-file-name.txt")
+```
+
+One common problem users run into when reading data from S3 is that Hadoop has
+three different file systems for interacting with S3: the `s3` file system, the
+`s3a` file system, and the `s3n` file system.  The first part of the file URL
+indicates which file system to use; above, the argument to `textFile` begins
+with `s3a://`, which indicates to use the `s3a` file system.  Each file system
+has a different set of configuration properties that need to be set to specify
+the AWS access keys. The configuration properties given in the example above
+were for `s3a`, so be sure to use a file path that begins with `s3a://` (or if
+you'd prefer to use the `s3` or `s3n` file systems, you'll need to use different
+configuration properties than the `s3a`-specific properties given above).
+
 ## More information
 See [Kelda](http://kelda.io) for more information about Kelda.js.
 

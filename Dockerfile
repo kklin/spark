@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
         wget \
 && wget -qO- http://www-us.apache.org/dist/spark/spark-2.2.0/spark-2.2.0-bin-hadoop2.7.tgz | tar -xzf - \
 && mv /spark* /spark \
+# Add the AWS jars so Spark can connect to S3.
+&& wget -q -O /spark/jars/aws-java-sdk.jar https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk/1.7.4/aws-java-sdk-1.7.4.jar \
+&& wget -q -O /spark/jars/hadoop-aws.jar https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/2.7.3/hadoop-aws-2.7.3.jar \
 && rm -rf /var/lib/lists/* /tmp/* /var/tmp/*
 
 # Create a directory for the Spark event log, which stores information about

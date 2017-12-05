@@ -108,6 +108,9 @@ class Spark {
     // Allow Spark workers to access the Spark Standalone Master.
     allow(this.workers, this.master, this.masterPort);
 
+    // Allow Spark workers to read input data from S3.
+    allow(this.workers, publicInternet, 443);
+
     // Add a container to run the Spark Driver, which manages a particular
     // application. This container should be used to launch user jobs.
     // XXX: Currently this container will run on an arbitrary machine. It
@@ -136,6 +139,10 @@ class Spark {
 
     // Allow the driver to connect to the standalone master.
     allow(this.driver, this.master, this.masterPort);
+
+    // Allow the driver to communicate with S3 (which is necessary so that the driver can
+    // get metadata about the S3 data before creating tasks to send to worker machines).
+    allow(this.driver, publicInternet, 443);
 
     // Allow Spark workers to access the Spark driver (this port is configured
     // in spark-defaults.conf).
