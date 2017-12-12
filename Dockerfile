@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:16.04
 Maintainer Ethan J. Jackson
 
 RUN apt-get update && apt-get install -y \
