@@ -12,6 +12,7 @@
     "gulp-if": "^2.0.2"
   },
   "dependencies": {
-    "kelda": ">=0.0.5 <1.0.0"
+    "kelda": ">=0.0.5 <1.0.0",
+    "@kelda/hadoop": "kelda/hadoop"
   }
 }

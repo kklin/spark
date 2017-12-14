@@ -14,6 +14,25 @@ function setImage(newImage) {
 }
 
 /**
+ * Replaces the keys defined by `vars` with their corresponding values in
+ * `template`. A variable is denoted in the template using {{key}}.
+ *
+ * @param {string} template - A template containing variables to replace.
+ * @param {Object.<string, string>} vars - Maps string variables to the value
+ *     that they should be replaced with.
+ * @returns {string} `template` with all of the variables replaced.
+ */
+function applyTemplate(templateArg, vars) {
+  let template = templateArg;
+  Object.keys(vars).forEach((k) => {
+    if (typeof k === 'string') {
+      template = template.replace(`{{${k}}}`, vars[k]);
+    }
+  });
+  return template;
+}
+
+/**
  * Determine how much memory (in mebibytes) should be allocated to each Spark worker,
  * based on the properties of the given machine. This functionality is designed to
  * match how the Spark Standalone scheduler determines how much memory is available
@@ -37,12 +56,14 @@ function getWorkerMemoryMiB(machine) {
  * @param {int} memoryMiB - The amount of memory (in mebibytes) that each Spark
  *   executor should be configured to use. See the Spark class documentation for
  *   more on how to set this.
+ * @param {string} defaultFilesystemURI - The default filesystem to use. If undefined,
+ *   this configuration property won't be set, so Spark will use the default.
  * @returns {Object.<String,String>} Spark configuration files that should be added
  *   to all masters and workers in a Spark cluster.  The files are returned in the
  *   format expected by the Container filepathToContents argument (i.e., as a mapping
  *   of filenames to the contents of that file).
  */
-function getConfigFiles(memoryMiB) {
+function getConfigFiles(memoryMiB, defaultFilesystemURI) {
   // Add a spark-defaults.conf, which can be used to configure the default job
   // configuration.
   let sparkConfContent = fs.readFileSync(path.join(__dirname, 'spark-defaults.conf'),
@@ -53,10 +74,22 @@ function getConfigFiles(memoryMiB) {
   // Add the log4j configuration, which manages the log format and verbosity.
   const log4jConfigContent = fs.readFileSync(path.join(__dirname, 'log4j.properties'),
     { encoding: 'utf8' });
+
   const sparkConfigFiles = {
     '/spark/conf/spark-defaults.conf': sparkConfContent,
     '/spark/conf/log4j.properties': log4jConfigContent,
   };
+
+  if (defaultFilesystemURI !== undefined) {
+    // Add the default Hadoop configuration. Spark uses the Hadoop APIs to read and write
+    // files (e.g., if a user calls SparkContext::textFile, it uses the Hadoop client to
+    // read the file), so while this is a Hadoop configuration, it applies to all files that
+    // Spark reads from and writes to.
+    const hadoopCoreSiteTemplate = fs.readFileSync(path.join(__dirname, 'core-site.xml'),
+      { encoding: 'utf8' });
+    const hadoopCoreSiteContent = applyTemplate(hadoopCoreSiteTemplate, { defaultFilesystemURI });
+    sparkConfigFiles['/spark/conf/core-site.xml'] = hadoopCoreSiteContent;
+  }
   return sparkConfigFiles;
 }
 
@@ -71,6 +104,15 @@ class Spark {
    * @param {number} [opts.memoryMiB=1024] - The amount of memory (in mebibytes) that each Spark
    *   worker (and each executor) should be given. The getWorkerMemoryMiB function can be used to
    *   determine an appropriate setting of this value for a particular machine.
+   * @param {@kelda/hadoop.HDFS} [opts.hdfs] - A HDFS cluster to connect to this Spark cluster. If
+   *   this option is specified, the HDFS cluster will be configured as Spark's default filesystem,
+   *   and network ACLs will be configured to allow Spark and HDFS to communicate.
+   * @param {string} [opts.defaultFilesystemURI] - The name of the default filesystem to use for
+   *   reading and writing files. This can be any URI supported by Hadoop; e.g., "file:///"
+   *   for the local filesystem, or "hdfs://1.2.3.4:9000" for HDFS at 1.2.3.4:9000, or
+   *   "s3a://mybucket" for "mybucket" in S3. If opts.hdfs is specified, this will default to
+   *   the HDFS URI of that HDFS deployment; otherwise, Kelda will not explicitly set the default
+   *   filesystem, and will use Spark's default.
    */
   constructor(nWorker, opts = {}) {
     let memoryMiB = opts.memoryMiB;
@@ -80,12 +122,22 @@ class Spark {
       // Spark only accepts integer values for the amount of memory, so round the input.
       memoryMiB = Math.round(memoryMiB);
     }
-    const sparkConfigFiles = getConfigFiles(memoryMiB);
+
+    let defaultFilesystemURI = opts.defaultFilesystemURI;
+    if (defaultFilesystemURI === undefined && opts.hdfs !== undefined) {
+      defaultFilesystemURI = opts.hdfs.namenodeURI;
+    }
+    const sparkConfigFiles = getConfigFiles(memoryMiB, defaultFilesystemURI);
+
+    // Spark's environment should include SPARK_PUBLIC_DNS, so Spark knows what hostname to use
+    // in the web UI, and HADOOP_CONF_DIR, so that when a core-site.xml file has been added, Spark
+    // can find it to configure Hadoop.
+    const env = { SPARK_PUBLIC_DNS: hostIP, HADOOP_CONF_DIR: '/spark/conf/' };
 
     this.master = new Container('spark-master', image, {
       command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
       filepathToContent: sparkConfigFiles,
-      env: { SPARK_PUBLIC_DNS: hostIP },
+      env,
     });
     this.masterPort = 7077;
     this.masterURL = `spark://${this.master.getHostname()}:${this.masterPort}`;
@@ -101,7 +153,7 @@ class Spark {
           this.masterURL,
         ],
         filepathToContent: sparkConfigFiles,
-        env: { SPARK_PUBLIC_DNS: hostIP },
+        env,
       }));
     }
 
@@ -117,6 +169,14 @@ class Spark {
     // should ideally run on the same machine that the master is running on
     // and not on a worker, where it may contend with the worker JVM.
     this.addDriver(sparkConfigFiles);
+
+    if (opts.hdfs !== undefined) {
+      // Enable access to HDFS from both the driver (which needs to read metadata,
+      // e.g., to compute task locality preferences based on which datanodes store
+      // the data that each task needs to read) and the Spark workers (which
+      // need access to directly read and write data).
+      opts.hdfs.enableAccess(this.workers.concat(this.driver));
+    }
   }
 
   /**

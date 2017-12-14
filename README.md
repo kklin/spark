@@ -211,6 +211,20 @@ were for `s3a`, so be sure to use a file path that begins with `s3a://` (or if
 you'd prefer to use the `s3` or `s3n` file systems, you'll need to use different
 configuration properties than the `s3a`-specific properties given above).
 
+### Setup a Spark cluster with HDFS
+
+Often, Spark workloads rely on writing intermediate data to HDFS.  The blueprint
+`sparkWithHDFSExample.js` shows an example of how to use the Spark blueprint
+along with the [Kelda HDFS blueprint](https://github.com/kelda/hadoop) to deploy
+Spark and HDFS together, and to connect them.  That blueprint will configure
+Spark to use HDFS as the default filesystem, so Spark file calls like:
+
+```scala
+myRdd.saveAsTextFile("myFilename");
+```
+
+will save the data in `myRdd` to a new file in HDFS named `myFilename`.
+
 ## More information
 See [Kelda](http://kelda.io) for more information about Kelda.js.
 
