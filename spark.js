@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Container, allow, hostIP, publicInternet } = require('kelda');
+const { Container, allowTraffic, hostIP, publicInternet } = require('kelda');
 
 let image = 'keldaio/spark';
 
@@ -158,10 +158,10 @@ class Spark {
     }
 
     // Allow Spark workers to access the Spark Standalone Master.
-    allow(this.workers, this.master, this.masterPort);
+    allowTraffic(this.workers, this.master, this.masterPort);
 
     // Allow Spark workers to read input data from S3.
-    allow(this.workers, publicInternet, 443);
+    allowTraffic(this.workers, publicInternet, 443);
 
     // Add a container to run the Spark Driver, which manages a particular
     // application. This container should be used to launch user jobs.
@@ -198,24 +198,24 @@ class Spark {
     });
 
     // Allow the driver to connect to the standalone master.
-    allow(this.driver, this.master, this.masterPort);
+    allowTraffic(this.driver, this.master, this.masterPort);
 
     // Allow the driver to communicate with S3 (which is necessary so that the driver can
     // get metadata about the S3 data before creating tasks to send to worker machines).
-    allow(this.driver, publicInternet, 443);
+    allowTraffic(this.driver, publicInternet, 443);
 
     // Allow Spark workers to access the Spark driver (this port is configured
     // in spark-defaults.conf).
-    allow(this.workers, this.driver, 36666);
+    allowTraffic(this.workers, this.driver, 36666);
 
     // Allow Spark workers to access the Spark block manager, on both the
     // master and on all of the other Spark workers (this is used to fetch
     // task information from the master and to fetch data from other
     // workers). This port is configured in spark-defaults.conf.
     const sparkBlockManagerPort = 36667;
-    allow(this.workers, this.workers, sparkBlockManagerPort);
-    allow(this.workers, this.driver, sparkBlockManagerPort);
-    allow(this.driver, this.workers, sparkBlockManagerPort);
+    allowTraffic(this.workers, this.workers, sparkBlockManagerPort);
+    allowTraffic(this.workers, this.driver, sparkBlockManagerPort);
+    allowTraffic(this.driver, this.workers, sparkBlockManagerPort);
 
     const driverHostname = this.driver.hostname;
     console.log(`Spark driver started with hostname "${driverHostname}". ` +
@@ -226,17 +226,17 @@ class Spark {
   exposeUIToPublic() {
     // Expose the Standalone master UI (which shows all of the workers and all of
     // the applications that have run).
-    allow(publicInternet, this.master, 8080);
-    allow(publicInternet, this.workers, 8081);
+    allowTraffic(publicInternet, this.master, 8080);
+    allowTraffic(publicInternet, this.workers, 8081);
 
     // Enable access to the history server, which shows information about jobs that
     // have run as part of applications that are now complete.
-    allow(publicInternet, this.driver, 18080);
+    allowTraffic(publicInternet, this.driver, 18080);
 
     // Expose the per-job UI (which shows each application).
     // This will only work when there's only one job; otherwise, the UI will use
     // increasing port numbers for the other jobs, and those will not be accessible.
-    allow(publicInternet, this.driver, 4040);
+    allowTraffic(publicInternet, this.driver, 4040);
 
     return this;
   }
