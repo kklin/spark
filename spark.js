@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Container, allowTraffic, hostIP, publicInternet } = require('kelda');
+const { Container, allowTraffic, publicInternet } = require('kelda');
 
 let image = 'keldaio/spark';
 
@@ -64,6 +64,10 @@ function getWorkerMemoryMiB(machine) {
  *   of filenames to the contents of that file).
  */
 function getConfigFiles(memoryMiB, defaultFilesystemURI) {
+  // Set a spark-env.sh file on each machine, which will be sourced before starting
+  // any Spark processes.
+  const sparkEnvContent = fs.readFileSync(path.join(__dirname, 'spark-env.sh'),
+    { encoding: 'utf8' });
   // Add a spark-defaults.conf, which can be used to configure the default job
   // configuration.
   let sparkConfContent = fs.readFileSync(path.join(__dirname, 'spark-defaults.conf'),
@@ -76,6 +80,7 @@ function getConfigFiles(memoryMiB, defaultFilesystemURI) {
     { encoding: 'utf8' });
 
   const sparkConfigFiles = {
+    '/spark/conf/spark-env.sh': sparkEnvContent,
     '/spark/conf/spark-defaults.conf': sparkConfContent,
     '/spark/conf/log4j.properties': log4jConfigContent,
   };
@@ -129,10 +134,10 @@ class Spark {
     }
     const sparkConfigFiles = getConfigFiles(memoryMiB, defaultFilesystemURI);
 
-    // Spark's environment should include SPARK_PUBLIC_DNS, so Spark knows what hostname to use
-    // in the web UI, and HADOOP_CONF_DIR, so that when a core-site.xml file has been added, Spark
-    // can find it to configure Hadoop.
-    const env = { SPARK_PUBLIC_DNS: hostIP, HADOOP_CONF_DIR: '/spark/conf/' };
+    // Spark's environment should include HADOOP_CONF_DIR so that when a
+    // core-site.xml file has been added, Spark can find it to configure
+    // Hadoop.
+    const env = { HADOOP_CONF_DIR: '/spark/conf/' };
 
     this.master = new Container('spark-master', image, {
       command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
@@ -162,6 +167,12 @@ class Spark {
 
     // Allow Spark workers to read input data from S3.
     allowTraffic(this.workers, publicInternet, 443);
+
+    // XXX: This is only necessary so that spark nodes can ask an external
+    // service what their public IP is.  Once this information can be passed in
+    // through an environment variable, these ACLs should be removed.
+    allowTraffic(this.workers, publicInternet, 80);
+    allowTraffic(this.master, publicInternet, 80);
 
     // Add a container to run the Spark Driver, which manages a particular
     // application. This container should be used to launch user jobs.
@@ -194,7 +205,7 @@ class Spark {
       // to ensure that the container doesn't exit.
       command: ['sh', '-c', '/spark/sbin/start-history-server.sh && tail -f /dev/null'],
       filepathToContent: configFiles,
-      env: { MASTER: this.masterURL, SPARK_PUBLIC_DNS: hostIP },
+      env: { MASTER: this.masterURL },
     });
 
     // Allow the driver to connect to the standalone master.
@@ -216,6 +227,10 @@ class Spark {
     allowTraffic(this.workers, this.workers, sparkBlockManagerPort);
     allowTraffic(this.workers, this.driver, sparkBlockManagerPort);
     allowTraffic(this.driver, this.workers, sparkBlockManagerPort);
+
+    // XXX: This is only necessary so that the driver can learn its public IP
+    // (see note above).
+    allowTraffic(this.driver, publicInternet, 80);
 
     const driverHostname = this.driver.hostname;
     console.log(`Spark driver started with hostname "${driverHostname}". ` +
