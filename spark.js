@@ -44,12 +44,16 @@ function applyTemplate(templateArg, vars) {
  *   on the given machine.  One mebibyte is 1024 * 1024 bytes.
  */
 function getWorkerMemoryMiB(machine) {
-  const memoryGigabytes = machine.ram;
+  const memoryGibibytes = machine.ram;
   // Convert the memory to mebibytes, which is what Spark expects (we use mebibytes
   // rather than gibibytes, because Spark only allows integer amounts of memory, so
   // we use mebibytes to allow finer-grained memory allocations).
-  const memoryMebibytes = (memoryGigabytes * 1000 * 1000 * 1000) / (1024 * 1024);
-  return memoryMebibytes - 1024;
+  const sparkMemoryMebibytes = (memoryGibibytes * 1024) - 1024;
+  if (sparkMemoryMebibytes <= 0) {
+    throw new Error(`too little memory (${memoryGibibytes} GiB). ` +
+      'Please choose a machine with more RAM.');
+  }
+  return sparkMemoryMebibytes;
 }
 
 /**
@@ -149,7 +153,7 @@ class Spark {
           '/spark/bin/spark-class',
           'org.apache.spark.deploy.worker.Worker',
           '--memory',
-          `${memoryMiB}MB`,
+          `${memoryMiB}M`,
           this.masterURL,
         ],
         filepathToContent: sparkConfigFiles,
