@@ -114,7 +114,7 @@ once SSH'ed into the container, run `spark-shell`:
 ```console
 $ spark-shell
 Spark context Web UI available at http://54.67.108.98:4040
-Spark context available as 'sc' (master = spark://spark-master.q:7077, app id = app-20171107203134-0001).
+Spark context available as 'sc' (master = spark://spark-master:7077, app id = app-20171107203134-0001).
 Spark session available as 'spark'.
 Welcome to
       ____              __
