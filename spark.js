@@ -143,7 +143,9 @@ class Spark {
     // Hadoop.
     const env = { HADOOP_CONF_DIR: '/spark/conf/' };
 
-    this.master = new Container('spark-master', image, {
+    this.master = new Container({
+      name: 'spark-master',
+      image,
       command: ['/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master'],
       filepathToContent: sparkConfigFiles,
       env,
@@ -153,7 +155,9 @@ class Spark {
 
     this.workers = [];
     for (let i = 0; i < nWorker; i += 1) {
-      this.workers.push(new Container('spark-worker', image, {
+      this.workers.push(new Container({
+        name: 'spark-worker',
+        image,
         command: [
           '/spark/bin/spark-class',
           'org.apache.spark.deploy.worker.Worker',
@@ -203,7 +207,9 @@ class Spark {
    * @returns {void}
    */
   addDriver(configFiles) {
-    this.driver = new Container('spark-driver', image, {
+    this.driver = new Container({
+      name: 'spark-driver',
+      image,
       // When we start the container, start the history server. The command to start the
       // history server starts it as a daemon, so we need to add a second, long-running command
       // to ensure that the container doesn't exit.

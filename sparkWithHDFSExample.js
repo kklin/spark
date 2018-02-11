@@ -4,7 +4,10 @@ const hadoop = require('@kelda/hadoop');
 
 const numSparkWorkers = 2;
 const machine = new kelda.Machine({ provider: 'Amazon', size: 'm4.large' });
-const inf = new kelda.Infrastructure(machine, machine.replicate(numSparkWorkers + 1));
+const inf = new kelda.Infrastructure({
+  masters: machine,
+  workers: machine.replicate(numSparkWorkers + 1),
+});
 
 const hdfs = new hadoop.HDFS(numSparkWorkers);
 hdfs.exposeUIToPublic();
